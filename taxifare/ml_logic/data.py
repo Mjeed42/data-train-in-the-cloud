@@ -77,6 +77,7 @@ def load_data_to_bq(
     - Save the DataFrame to BigQuery
     - Empty the table beforehand if `truncate` is True, append otherwise
     """
+    data = pd.DataFrame(data)  # Ensure data is a DataFrame
 
     assert isinstance(data, pd.DataFrame)
     full_table_name = f"{gcp_project}.{bq_dataset}.{table}"
@@ -86,9 +87,18 @@ def load_data_to_bq(
 
     # 🎯 HINT for "*** TypeError: expected bytes, int found":
     # After preprocessing the data, your original column names are gone (print it to check),
-    # so ensure that your column names are *strings* that start with either 
+    # so ensure that your column names are *strings* that start with either
     # a *letter* or an *underscore*, as BQ does not accept anything else
 
-    pass  # YOUR CODE HERE
+    table = f"{gcp_project}.{bq_dataset}.{table}"
+
+    data=data.add_prefix("col_")  # Add prefix to all columns to avoid BQ errors
+    client = bigquery.Client()
+
+    write_mode = "WRITE_TRUNCATE" # or "WRITE_APPEND"
+    job_config = bigquery.LoadJobConfig(write_disposition=write_mode)
+
+    job = client.load_table_from_dataframe(data, table, job_config=job_config)
+    result = job.result()
 
     print(f"✅ Data saved to bigquery, with shape {data.shape}")
